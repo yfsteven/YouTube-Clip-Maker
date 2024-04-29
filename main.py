@@ -1,6 +1,7 @@
 import requests, re, os, json, sys
 from pytube import YouTube
 from moviepy.editor import *
+from transcribe_anything.api import transcribe
 
 url = input('Input a YouTube Link\n')
 
@@ -10,6 +11,7 @@ video_id = ""
 
 os.makedirs('youtube_folder', exist_ok=True)
 os.makedirs('clip_folder', exist_ok=True)
+os.makedirs('processed_folder', exist_ok=True)
 
 is_there_anything = re_strip_url.findall(str(url))
 
@@ -50,22 +52,34 @@ def convert_millisecond(ms):
 
 converted_high_intense_moments = {convert_millisecond(i):convert_millisecond(i+30000) for i in high_intense_moments} # 30000 milisecond translates to 30 seconds
 
-print(converted_high_intense_moments)
-
 yt = YouTube(url)
 
 title = yt.title
 
 yd = yt.streams.get_highest_resolution()
 
+print("Downloading video...")
 yd.download(f"./youtube_folder/", filename=f"{title}")
 
 short_width = 1080
 short_height = 1920
 
+clip_list = []
+
 for start in converted_high_intense_moments:
         end = converted_high_intense_moments[start]
+
         clip = VideoFileClip(f'./youtube_folder/{title}').subclip(start, end)
-        clip.resize(height=1920)
-        clip.crop(x_center=960, y_center=960, width=1080, height=1920)
+        clip.resize(height=short_height)
+        clip.crop(x_center=960, y_center=960, width=short_width, height=short_height)
+
+        clip_list.append(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"))
+
         clip.write_videofile(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"), audio=True, codec="libx264", threads=10)
+
+
+for clip_path in clip_list:
+    transcribe(
+        url_or_file=clip_path,
+        output_dir=".processed_folder",
+    )
