@@ -2,6 +2,7 @@ import requests, re, os, json, sys
 from pytube import YouTube
 from moviepy.editor import *
 from transcribe_anything.api import transcribe
+from moviepy.video.fx.all import crop
 
 url = input('Input a YouTube Link\n')
 
@@ -70,16 +71,18 @@ for start in converted_high_intense_moments:
         end = converted_high_intense_moments[start]
 
         clip = VideoFileClip(f'./youtube_folder/{title}').subclip(start, end)
-        clip.resize(height=short_height)
-        clip.crop(x_center=960, y_center=960, width=short_width, height=short_height)
+
+        resized_clip = clip.resize(height=short_height)
+
+        new_clip = crop(resized_clip, x_center=960, y_center=960, width=short_width, height=short_height)
 
         clip_list.append(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"))
 
-        clip.write_videofile(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"), audio=True, codec="libx264", threads=10)
+        new_clip.write_videofile(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"), audio=True, codec="libx264", threads=10)
 
 
 for clip_path in clip_list:
     transcribe(
         url_or_file=clip_path,
-        output_dir=".processed_folder",
+        output_dir="./processed_folder",
     )
