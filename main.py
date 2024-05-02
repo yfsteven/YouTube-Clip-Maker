@@ -1,8 +1,10 @@
-import requests, re, os, json, sys
+import requests, re, os, json, sys, time
 from pytube import YouTube
 from moviepy.editor import *
 from transcribe_anything.api import transcribe
 from moviepy.video.fx.all import crop
+from simple_youtube_api.Channel import Channel
+from simple_youtube_api.LocalVideo import LocalVideo
 
 url = input('Input a YouTube Link\n')
 
@@ -59,13 +61,13 @@ title = yt.title
 
 yd = yt.streams.get_highest_resolution()
 
-print("Downloading video...")
 yd.download(f"./youtube_folder/", filename=f"{title}")
 
 short_width = 1080
 short_height = 1920
 
 clip_list = []
+processed_clips = []
 
 for start in converted_high_intense_moments:
         end = converted_high_intense_moments[start]
@@ -77,6 +79,7 @@ for start in converted_high_intense_moments:
         new_clip = crop(resized_clip, x_center=960, y_center=960, width=short_width, height=short_height)
 
         clip_list.append(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"))
+        processed_clips.append(os.path.join('./processed_folder/', f"{title}from{start}to{end}.mp4"))
 
         new_clip.write_videofile(os.path.join('./clip_folder/', f"{title}from{start}to{end}.mp4"), audio=True, codec="libx264", threads=10)
 
@@ -86,3 +89,58 @@ for clip_path in clip_list:
         url_or_file=clip_path,
         output_dir="./processed_folder",
     )
+
+
+channel = Channel()
+channel.login("client_secret.json", "credentials.storage")
+
+for video in processed_clips:
+    video = LocalVideo(file_path=f"{video}")
+
+    video.set_title(title)
+    video.set_description('Made by a bot')
+    video.set_tags(["shorts"])
+    video.set_category("education")
+    video.set_default_language("en-US")
+
+
+    video.set_embeddable(True)
+    video.set_license("creativeCommon")
+    video.set_privacy_status("public")
+    video.set_public_stats_viewable(True)
+
+    video = channel.upload_video(video)
+
+    video.like()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
